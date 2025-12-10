@@ -1,45 +1,52 @@
 const std = @import("std");
 
 pub fn main() !void {
-    const file = try std.fs.cwd().openFile("input.txt", .{});
-    defer file.close();
+    const f = try std.fs.cwd().openFile("input.txt", .{});
+    defer f.close();
 
-    var buffer: [4096]u8 = undefined;
-    var file_reader = file.reader(&buffer);
-    var invalidIdsTotal: u64 = 0;
+    var buf:[4096]u8 = undefined;
+    var reader = f.reader(&buf);
+    var total: u64 = 0;
 
-    while (true) {
-        const idRange = try file_reader.interface.takeDelimiter(',') orelse break;
-        var iterator = std.mem.splitAny(u8, idRange, "-");
+    while(true) {
+        const line = try reader.interface.takeDelimiter(',') orelse break;
+        var iterator = std.mem.splitAny(u8, line, "-");
 
-        const startStr = iterator.next() orelse return;
-        const endStr = iterator.next() orelse return;
+        const first_str = iterator.next() orelse return;
+        const last_str = iterator.next() orelse return;
 
-        const trimmed = std.mem.trim(u8, endStr, "\n\r \t");
+        const trimmed = std.mem.trim(u8, last_str, "\n\r \t");
 
-        const start = try std.fmt.parseInt(u64, startStr, 10);
-        const end = try std.fmt.parseInt(u64, trimmed, 10);
+        const first_num: u64 = try std.fmt.parseInt(u64, first_str, 10);
+        const last_num: u64 = try std.fmt.parseInt(u64, trimmed, 10);
 
-        var i = start;
-        while(i <= end) : (i += 1) {
-            if (isInvalid(i)) invalidIdsTotal += i;
+        var i: u64 = first_num;
+        while(i <= last_num) : (i += 1) {
+            if(isInvalid(i)) total += i;
         }
 
+        continue;
     }
 
-    std.debug.print("{d}", .{invalidIdsTotal});
+    std.debug.print("{d}\n", .{total});
 }
 
-fn isInvalid(num: u64) bool {
-    var buf: [20]u8 = undefined;
-    const numStr = std.fmt.bufPrint(&buf, "{d}", .{num}) catch return false;
+fn isInvalid(n:u64) bool {
+    var buf:[32]u8 = undefined;
+    const n_str = std.fmt.bufPrint(&buf, "{d}", .{n}) catch return false;
+    
+    var slice: usize = 1;
+    while(slice < n_str.len) : (slice+= 1) {
+        if(n_str.len % slice != 0) continue;
+        const first = n_str[0..slice];
+        var curr_slice:usize = slice; 
 
-    if (numStr.len % 2 != 0) return false;
+        while(curr_slice != n_str.len) : (curr_slice += slice) {
+            if(!std.mem.eql(u8, first, n_str[curr_slice..curr_slice + slice])) break;
+        }
 
-    const half = numStr.len / 2;
-    const firstHalf = numStr[0..half];
-    const secondHalf = numStr[half..];
-
-    return std.mem.eql(u8, firstHalf, secondHalf);
-
+        if(curr_slice == n_str.len) return true;
+    }
+    return false;
 }
+
