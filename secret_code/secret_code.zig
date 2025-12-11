@@ -15,19 +15,21 @@ pub fn main() !void {
         
         const dir = line[0];
         const amount = try std.fmt.parseInt(i32, line[1..], 10);
-        
+
         switch (dir) {
             'L' => {
-                dial_position = @mod(dial_position - amount, 100);
-                if(dial_position == 0) tick_count += 1;
+                const new_pos = dial_position - amount;
+                tick_count += @divFloor(dial_position - 1, 100) - @divFloor(new_pos - 1, 100);
+                dial_position = @mod(new_pos, 100);           
             },
             'R' => {
-                dial_position = @mod(dial_position + amount, 100);
-                if(dial_position == 0) tick_count += 1;
+                const new_pos = dial_position + amount;
+                tick_count += @divFloor(new_pos, 100);
+                dial_position = @mod(new_pos, 100);
             },
             else => unreachable,
         }
     }
- 
+
     std.debug.print("{d}\n", .{tick_count});
 }
